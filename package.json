@@ -1,0 +1,51 @@
+{
+    "name": "sc-game-base-view-module",
+    "version": "1.0.0",
+    "description": "Reusable view components for sc-game-base",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "type": "module",
+    "scripts": {
+        "setup": "npm install",
+        "build": "npm run setup && node ./node_modules/typescript/bin/tsc --project tsconfig.json",
+        "clean": "rimraf dist",
+        "prebuild": "npm run clean",
+        "prepublishOnly": "npm run build",
+        "publish-package": "npm run build && npm publish",
+        "test": "jest --config jest.config.cjs --testPathPattern=tests/unit-tests/",
+        "test-coverage": "jest --config jest.config.cjs --collect-coverage --testPathPattern=tests/unit-tests/",
+        "install-deps": "npm install && npm install --save-peer",
+        "link-pkg": "yarn link && echo '@sg/sg-game-client has been linked. Use yarn link @sg/sg-game-client in other projects to use it.'",
+        "link-pkg:dev": "npm run build && yarn link && echo '@sg/sg-game-client development version has been linked. Use yarn link @sg/sg-game-client in other projects to use it.'",
+        "link-pkg:watch": "yarn link && echo '@sg/sg-game-client watch mode has been linked. Use yarn link @sg/sg-game-client in other projects to use it.' && npm run start",
+        "unlink-pkg": "yarn unlink"
+    },
+    "files": [
+        "dist",
+        "README.md"
+    ],
+    "dependencies": {
+        "rimraf": "^5.0.5",
+        "sc-game-base": "4.1.0",
+        "socket.io": "^4.0.0"
+    },
+    "peerDependencies": {
+        "sc-game-base": ">=4.0.0"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.0.0",
+        "@babel/preset-env": "^7.12.11",
+        "@babel/preset-typescript": "^7.23.3",
+        "@types/jest": "27.5.2",
+        "@types/node": "^20.11.17",
+        "@types/socket.io": "^3.0.2",
+        "babel-jest": "27.5.1",
+        "jest": "27.5.1",
+        "jest-extended": "^0.11.5",
+        "jest-junit": "^12.2.0",
+        "jest-micro-auto-stub": "^1.0.9",
+        "jest-sonar-reporter": "^2.0.0",
+        "ts-jest": "^27.1.5",
+        "typescript": "^5.3.3"
+    }
+}
