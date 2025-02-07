@@ -119,6 +119,7 @@ describe('BaseViewRouter', () => {
 
             // Assert
             expect(mockLogService.logError).toHaveBeenCalledWith(error);
+            expect(mockGameData.viewPlayers[mockSocket.id]).toBe(mockSocket);
         });
 
         it('should not proceed when verify returns false', async () => {
@@ -290,75 +291,4 @@ describe('BaseViewRouter', () => {
             expect(result).toBe(true);
         });
     });
-
-    // Test verify method
-    it('should return true by default from verify method', () => {
-        // Arrange
-        class TestRouter extends BaseViewRouter {
-            public testVerify(): boolean {
-                return this.verify();
-            }
-        }
-
-        const router = new TestRouter({
-            definition: {},
-            gameData: {},
-            userSignInConsumer: { consume: jest.fn() },
-            inGameConsumer: { consume: jest.fn() },
-            placeBetConsumer: { consume: jest.fn() },
-            userDisconnectConsumer: { consume: jest.fn() },
-            userSignInPublisher: { publish: jest.fn() },
-            historyQuery: { query: jest.fn() },
-            logService: { logError: jest.fn() },
-            playGamePermissionValidator: { validate: jest.fn() },
-            viewConsumer: { consume: jest.fn() }
-        });
-
-        // Act
-        const result = router.testVerify();
-
-        // Assert
-        expect(result).toBe(true);
-    });
-
-    // Test error handling in handleInGame
-    it('should handle errors in handleInGame', async () => {
-        // Arrange
-        const mockError = new Error('Test error');
-        const mockLogService = { logError: jest.fn() };
-        const mockSocket = {
-            id: 'test-socket-id',
-            on: jest.fn(),
-        } as any;
-
-        const mockViewConsumer = {
-            consume: jest.fn().mockRejectedValue(mockError)
-        };
-
-        const router = new BaseViewRouter({
-            definition: {},
-            gameData: { viewPlayers: {} },
-            userSignInConsumer: { consume: jest.fn() },
-            inGameConsumer: { consume: jest.fn() },
-            placeBetConsumer: { consume: jest.fn() },
-            userDisconnectConsumer: { consume: jest.fn() },
-            userSignInPublisher: { publish: jest.fn() },
-            historyQuery: { query: jest.fn() },
-            logService: mockLogService,
-            playGamePermissionValidator: { validate: jest.fn() },
-            viewConsumer: mockViewConsumer
-        });
-
-        // Initialize router
-        router.init(mockSocket);
-
-        // Get the inGame handler
-        const [[, inGameHandler]] = mockSocket.on.mock.calls;
-
-        // Act
-        await inGameHandler({ id: 'test-id' });
-
-        // Assert
-        expect(mockLogService.logError).toHaveBeenCalledWith(mockError);
-    });
-}); 
+});

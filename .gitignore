@@ -10,6 +10,14 @@ build/
 
 # Coverage directory used by tools like istanbul
 coverage/
+/coverage
+
+# Stryker reports and temp files
+.stryker-tmp
+reports/
+stryker-tmp
+mutation-report.html
+mutation-report.json
 
 # IDE and editor files
 .idea/
