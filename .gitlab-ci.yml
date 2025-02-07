@@ -35,7 +35,21 @@ unit_test:
     - npm install
   script:
     - npm run test:coverage
-  coverage: '/All files[^|]*\|[^|]*\|[^|]*\|[^|]*\|[\d\.]*\s*/'
+  coverage: '/All files[^|]*\|[^|]*\|[^|]*\|[\d\.]*\s*/'
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: always
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: always
+    - changes:
+        - src/**/*
+        - tests/**/*
+        - package.json
+        - package-lock.json
+        - jest.config.js
+        - jest.config.cjs
+        - tsconfig.json
+      when: always
 
 mutation_test:
   image: $NODEJS_IMAGE
@@ -58,3 +72,14 @@ mutation_test:
     paths:
       - reports/mutation
     expire_in: 1 week
+  rules:
+    - changes:
+        - src/**/*
+        - tests/**/*
+        - package.json
+        - package-lock.json
+        - jest.config.js
+        - jest.config.cjs
+        - tsconfig.json
+        - stryker.config.json
+      when: on_success
