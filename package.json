@@ -1,6 +1,6 @@
 {
     "name": "sc-game-base-view-module",
-    "version": "1.0.0",
+    "version": "1.0.1-beta.4",
     "description": "Reusable view components for sc-game-base",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -9,9 +9,12 @@
         "setup": "npm install",
         "build": "npm run setup && node ./node_modules/typescript/bin/tsc --project tsconfig.json",
         "clean": "rimraf dist",
-        "prebuild": "npm run clean",
-        "prepublishOnly": "npm run build",
-        "publish-package": "npm run build && npm publish",
+        "reg": "npm set registry http://npm.lumigame.com",
+        "pub": "npm publish --registry http://npm.lumigame.com",
+        "pub:beta": "npm publish --tag beta --registry http://npm.lumigame.com",
+        "version:beta": "npm version prerelease --preid beta",
+        "release:beta": "npm run build && npm run version:beta && npm run pub:beta",
+        "semantic-release": "semantic-release",
         "test": "jest",
         "test:coverage": "jest --coverage",
         "test:mutation": "stryker run",
@@ -20,6 +23,10 @@
         "link-pkg:dev": "npm run build && yarn link && echo '@sg/sg-game-client development version has been linked. Use yarn link @sg/sg-game-client in other projects to use it.'",
         "link-pkg:watch": "yarn link && echo '@sg/sg-game-client watch mode has been linked. Use yarn link @sg/sg-game-client in other projects to use it.' && npm run start",
         "unlink-pkg": "yarn unlink"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://git3.nexdev.net/l1/game-services/sc-game-base-view-module.git"
     },
     "files": [
         "dist",
