@@ -1,5 +1,6 @@
 import { Socket } from 'socket.io';
 import ViewConsumer from '../../src/view-consumer';
+import type { GameData } from '../../src/view-consumer';
 
 describe('ViewConsumer', () => {
     // Mock dependencies
@@ -336,6 +337,144 @@ describe('ViewConsumer', () => {
                     remainingTime: 30,
                     um: true,
                     um_message: expectedMessage
+                });
+            });
+        });
+    });
+
+    // Additional test cases for 100% branch coverage
+    describe('edge cases for buildPayload', () => {
+        it('should handle completely undefined gameConfigs', async () => {
+            // Arrange
+            const gameDataWithoutConfigs: GameData = {
+                remainingTime: 30,
+                roundId: 'round123',
+                totalBets: {},
+                gameConfigs: undefined
+            };
+
+            const viewConsumer = new ViewConsumer(
+                defaultDefinition,
+                gameDataWithoutConfigs,
+                mockRoundQuery,
+                mockPublisher,
+                mockGetBalance,
+                mockUserInfosRepository
+            );
+
+            // Act
+            await viewConsumer.consume(mockSocket, 'user123');
+
+            // Assert
+            expect(mockSocket.emit).toHaveBeenCalledWith('testGame', {
+                remainingTime: 30,
+                um: true,
+                um_message: undefined
+            });
+        });
+
+        it('should handle partial gameConfigs with only enabled flag', async () => {
+            // Arrange
+            const partialGameData: GameData = {
+                remainingTime: 30,
+                roundId: 'round123',
+                totalBets: {},
+                gameConfigs: {
+                    odds: null,
+                    originalOdds: null,
+                    enableFreeBet: false,
+                    boostedChoices: null,
+                    enabled: true
+                }
+            };
+
+            const viewConsumer = new ViewConsumer(
+                defaultDefinition,
+                partialGameData,
+                mockRoundQuery,
+                mockPublisher,
+                mockGetBalance,
+                mockUserInfosRepository
+            );
+
+            // Act
+            await viewConsumer.consume(mockSocket, 'user123');
+
+            // Assert
+            expect(mockSocket.emit).toHaveBeenCalledWith('testGame', {
+                user123: {
+                    remainingTime: 30,
+                    roundId: 'round123',
+                    gameConfigs: {
+                        odds: null,
+                        originalOdds: null,
+                        enableFreeBet: false,
+                        boostedChoices: null
+                    },
+                    roundHistory: [],
+                    ownBets: {},
+                    totalBets: {}
+                }
+            });
+        });
+    });
+
+    describe('complex disabled states combinations', () => {
+        const testCases = [
+            {
+                desc: 'undefined gameConfigs with delayStartTime',
+                gameData: {
+                    ...defaultGameData,
+                    gameConfigs: undefined,
+                    delayStartTime: 1000,
+                    umMessages: undefined
+                } as GameData
+            },
+            {
+                desc: 'disabled gameConfigs with delayStartTime and umMessages',
+                gameData: {
+                    ...defaultGameData,
+                    gameConfigs: {
+                        odds: null,
+                        originalOdds: null,
+                        enableFreeBet: false,
+                        boostedChoices: null,
+                        enabled: false
+                    },
+                    delayStartTime: 1000,
+                    umMessages: 'Delayed and disabled'
+                } as GameData
+            },
+            {
+                desc: 'enabled gameConfigs but with delayStartTime',
+                gameData: {
+                    ...defaultGameData,
+                    delayStartTime: 1000,
+                    umMessages: 'Delayed start'
+                } as GameData
+            }
+        ];
+
+        testCases.forEach(({ desc, gameData }) => {
+            it(`should handle ${desc}`, async () => {
+                // Arrange
+                const viewConsumer = new ViewConsumer(
+                    defaultDefinition,
+                    gameData,
+                    mockRoundQuery,
+                    mockPublisher,
+                    mockGetBalance,
+                    mockUserInfosRepository
+                );
+
+                // Act
+                await viewConsumer.consume(mockSocket);
+
+                // Assert
+                expect(mockSocket.emit).toHaveBeenCalledWith('testGame', {
+                    remainingTime: gameData.remainingTime,
+                    um: true,
+                    um_message: gameData.umMessages
                 });
             });
         });

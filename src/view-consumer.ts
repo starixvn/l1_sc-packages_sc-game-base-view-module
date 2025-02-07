@@ -8,7 +8,7 @@ interface GameConfigs {
     enabled: boolean;
 }
 
-interface GameData {
+export interface GameData {
     gameConfigs?: GameConfigs;
     remainingTime: number;
     umMessages?: any;
