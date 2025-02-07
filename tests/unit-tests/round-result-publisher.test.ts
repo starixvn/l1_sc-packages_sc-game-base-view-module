@@ -1,142 +1,140 @@
-/** @format */
-
-import { jest } from "@jest/globals";
 import { Core } from "sc-game-base";
 import { Socket } from "socket.io";
 import RoundResultPublisher from "../../src/round-result-publisher";
 
-// Mock sc-game-base Core
-jest.mock("sc-game-base", () => ({
-    Core: {
-        BaseEventPublishers: {
-            RoundResultPublisher: jest.fn(),
-        },
-    },
-}));
+// Create mock functions
+const mockParentPublishToAllUsers = jest.fn();
 
-interface MockSocket {
-    emit: jest.Mock;
-}
+// Mock the parent class
+jest.mock("sc-game-base", () => {
+    class MockBaseRoundResultPublisher {
+        constructor() {
+            // Bind methods to ensure proper 'this' context
+            this.publishToAllUsers = this.publishToAllUsers.bind(this);
+        }
 
-interface GameData {
-    viewPlayers?: Record<string, MockSocket>;
-}
+        publishToAllUsers(payload: any) {
+            return mockParentPublishToAllUsers(payload);
+        }
+    }
+
+    return {
+        Core: {
+            BaseEventPublishers: {
+                RoundResultPublisher: MockBaseRoundResultPublisher
+            }
+        }
+    };
+});
 
 describe("RoundResultPublisher", () => {
     let publisher: RoundResultPublisher;
-    let mockSocket: MockSocket;
-    let mockGameData: GameData;
-    let mockPayload: { roundResult: string };
-    let mockSuperPublishToAllUsers: jest.Mock;
+    let mockSocket1: jest.Mocked<Socket>;
+    let mockSocket2: jest.Mocked<Socket>;
 
     beforeEach(() => {
         // Reset all mocks
         jest.clearAllMocks();
 
-        // Create mock socket
-        mockSocket = {
-            emit: jest.fn(async () => { }) as jest.Mock
-        };
+        // Reset the parent mock implementation
+        mockParentPublishToAllUsers.mockClear();
 
-        // Create mock game data
-        mockGameData = {
-            viewPlayers: {
-                player1: mockSocket,
-                player2: mockSocket,
-            },
-        };
+        // Create mock sockets with properly typed emit function
+        mockSocket1 = {
+            emit: jest.fn().mockImplementation((event: string, ...args: any[]) => Promise.resolve(true)),
+            // Add other required Socket.io properties as needed
+        } as unknown as jest.Mocked<Socket>;
 
-        // Create mock payload
-        mockPayload = {
-            roundResult: "test-result",
-        };
+        mockSocket2 = {
+            emit: jest.fn().mockImplementation((event: string, ...args: any[]) => Promise.resolve(true)),
+            // Add other required Socket.io properties as needed
+        } as unknown as jest.Mocked<Socket>;
 
-        // Mock super.publishToAllUsers
-        mockSuperPublishToAllUsers = jest.fn(async () => { }) as jest.Mock;
-        (Core.BaseEventPublishers.RoundResultPublisher as jest.Mock).mockImplementation(() => ({
-            publishToAllUsers: mockSuperPublishToAllUsers,
-        }));
-
-        // Create publisher instance
+        // Initialize publisher
         publisher = new RoundResultPublisher();
-        (publisher as any).gameData = mockGameData;
-        (publisher as any).definition = { name: "test-event" };
+
+        // Set required properties
+        (publisher as any).definition = { name: "testEvent" };
     });
 
     describe("publishToAllUsers", () => {
-        it("should call super.publishToAllUsers and emit to all view players", async () => {
-            // Act
-            await publisher.publishToAllUsers(mockPayload);
+        const testPayload = { data: "test" };
 
-            // Assert
-            expect(mockSuperPublishToAllUsers).toHaveBeenCalledWith(mockPayload);
-            expect(mockSocket.emit).toHaveBeenCalledTimes(2);
-            expect(mockSocket.emit).toHaveBeenNthCalledWith(
-                1,
-                "test-event",
-                mockPayload
-            );
-            expect(mockSocket.emit).toHaveBeenNthCalledWith(
-                2,
-                "test-event",
-                mockPayload
-            );
-        });
-
-        it("should handle case when viewPlayers is undefined", async () => {
+        it("should call parent publishToAllUsers and not emit when no viewPlayers exist", async () => {
             // Arrange
-            (publisher as any).gameData.viewPlayers = undefined;
+            (publisher as any).gameData = {};
 
             // Act
-            await publisher.publishToAllUsers(mockPayload);
+            await publisher.publishToAllUsers(testPayload);
 
             // Assert
-            expect(mockSuperPublishToAllUsers).toHaveBeenCalledWith(mockPayload);
-            expect(mockSocket.emit).not.toHaveBeenCalled();
+            expect(mockParentPublishToAllUsers).toHaveBeenCalledTimes(1);
+            expect(mockParentPublishToAllUsers).toHaveBeenCalledWith(testPayload);
+            expect(mockSocket1.emit).not.toHaveBeenCalled();
         });
 
-        it("should continue processing other sockets when one socket emit fails", async () => {
+        it("should emit to all view players when they exist", async () => {
             // Arrange
-            const mockConsoleError = jest
-                .spyOn(console, "error")
-                .mockImplementation(() => { });
-            const mockErrorSocket: MockSocket = {
-                emit: jest.fn(async () => { throw new Error("Socket error"); }) as jest.Mock
-            };
-            (publisher as any).gameData.viewPlayers = {
-                player1: mockErrorSocket,
-                player2: mockSocket,
+            (publisher as any).gameData = {
+                viewPlayers: {
+                    "player1": mockSocket1,
+                    "player2": mockSocket2,
+                },
             };
 
             // Act
-            await publisher.publishToAllUsers(mockPayload);
+            await publisher.publishToAllUsers(testPayload);
 
             // Assert
-            expect(mockSuperPublishToAllUsers).toHaveBeenCalledWith(mockPayload);
-            expect(mockErrorSocket.emit).toHaveBeenCalledWith(
-                "test-event",
-                mockPayload
-            );
-            expect(mockSocket.emit).toHaveBeenCalledWith("test-event", mockPayload);
-            expect(mockConsoleError).toHaveBeenCalledWith(
+            expect(mockParentPublishToAllUsers).toHaveBeenCalledTimes(1);
+            expect(mockParentPublishToAllUsers).toHaveBeenCalledWith(testPayload);
+            expect(mockSocket1.emit).toHaveBeenCalledWith("testEvent", testPayload);
+            expect(mockSocket2.emit).toHaveBeenCalledWith("testEvent", testPayload);
+        });
+
+        it("should handle socket emission errors gracefully", async () => {
+            // Arrange
+            const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+            const emitError = new Error("Emission failed");
+            (mockSocket1.emit as jest.Mock).mockRejectedValueOnce(emitError);
+
+            (publisher as any).gameData = {
+                viewPlayers: {
+                    "player1": mockSocket1,
+                    "player2": mockSocket2,
+                },
+            };
+
+            // Act
+            await publisher.publishToAllUsers(testPayload);
+
+            // Assert
+            expect(consoleSpy).toHaveBeenCalledWith(
                 "Error emitting to socket:",
-                expect.any(Error)
+                emitError
             );
+            expect(mockParentPublishToAllUsers).toHaveBeenCalledTimes(1);
+            expect(mockParentPublishToAllUsers).toHaveBeenCalledWith(testPayload);
+            expect(mockSocket2.emit).toHaveBeenCalledWith("testEvent", testPayload);
 
             // Cleanup
-            mockConsoleError.mockRestore();
+            consoleSpy.mockRestore();
         });
 
         it("should handle empty viewPlayers object", async () => {
             // Arrange
-            (publisher as any).gameData.viewPlayers = {};
+            (publisher as any).gameData = {
+                viewPlayers: {},
+            };
 
             // Act
-            await publisher.publishToAllUsers(mockPayload);
+            await publisher.publishToAllUsers(testPayload);
 
             // Assert
-            expect(mockSuperPublishToAllUsers).toHaveBeenCalledWith(mockPayload);
-            expect(mockSocket.emit).not.toHaveBeenCalled();
+            expect(mockParentPublishToAllUsers).toHaveBeenCalledTimes(1);
+            expect(mockParentPublishToAllUsers).toHaveBeenCalledWith(testPayload);
+            expect(mockSocket1.emit).not.toHaveBeenCalled();
+            expect(mockSocket2.emit).not.toHaveBeenCalled();
         });
     });
 }); 

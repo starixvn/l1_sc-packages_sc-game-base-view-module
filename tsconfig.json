@@ -11,14 +11,26 @@
         "outDir": "./dist",
         "rootDir": "./src",
         "strict": true,
-        "moduleResolution": "bundler",
+        "moduleResolution": "node",
+        "baseUrl": "./",
         "allowJs": true,
         "esModuleInterop": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
         "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true
+        "forceConsistentCasingInFileNames": true,
+        "types": [
+            "jest",
+            "node"
+        ]
     },
     "include": [
-        "src/**/*"
+        "src/**/*",
+        "tests/unit-tests/index.test.ts",
+        "tests/unit-tests/round-result-publisher.test.ts",
+        "tests/unit-tests/view-consumer.test.ts",
+        "tests/unit-tests/game-status-publisher.test.ts",
+        "tests/unit-tests/base-view-router.test.ts"
     ],
     "exclude": [
         "node_modules",

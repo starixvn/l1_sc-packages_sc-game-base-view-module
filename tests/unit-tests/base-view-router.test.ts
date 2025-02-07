@@ -1,63 +1,342 @@
-/** @format */
-
-import { jest } from "@jest/globals";
 import { Socket } from "socket.io";
 import BaseViewRouter from "../../src/base-view-router";
-import type { BaseViewRouterConfig, GameData, ViewConsumer, LogService } from "../../src/types/types";
+import { BaseViewRouterConfig } from "../../src/types/types";
 
-jest.mock("socket.io");
-
-// Create a test class that extends BaseViewRouter to access protected methods
-class TestBaseViewRouter extends BaseViewRouter {
-    public getGameData(): GameData {
-        return (this as any).gameData;
-    }
-
-    public getSocketClient(): Socket {
-        return (this as any).socketClient;
-    }
-
-    public verify(): boolean {
-        return super.verify();
-    }
-
-    // These methods are private in the base class, but we need to test them
-    public async testHandleInGame(payload?: { id?: string }): Promise<void> {
-        return (this as any).handleInGame(payload);
-    }
-
-    public testHandleDisconnect(): void {
-        return (this as any).handleDisconnect();
-    }
-}
-
-describe("BaseViewRouter", () => {
-    let baseViewRouter: TestBaseViewRouter;
-    let mockSocket: any;
-    let mockDependencies: BaseViewRouterConfig;
+describe('BaseViewRouter', () => {
+    // Mock dependencies
+    let mockSocket: jest.Mocked<Socket>;
+    let mockGameData: any;
+    let mockLogService: any;
+    let mockViewConsumer: any;
+    let routerConfig: BaseViewRouterConfig;
+    let router: BaseViewRouter;
 
     beforeEach(() => {
+        // Setup mock socket
         mockSocket = {
-            id: "test-socket-id",
-            on: jest.fn().mockReturnValue(true),
-            emit: jest.fn().mockReturnValue(true),
+            id: 'test-socket-id',
+            on: jest.fn(),
+        } as unknown as jest.Mocked<Socket>;
+
+        // Setup mock game data
+        mockGameData = {
+            viewPlayers: {}
         };
 
-        const mockConsume = jest.fn<Promise<void>, [Socket, string | undefined]>()
-            .mockImplementation(() => Promise.resolve());
-
-        const mockLogError = jest.fn<void, [Error | unknown]>();
-
-        const mockViewConsumer: ViewConsumer = {
-            consume: mockConsume
+        // Setup mock log service
+        mockLogService = {
+            logError: jest.fn()
         };
 
-        const mockLogService: LogService = {
-            logError: mockLogError
+        // Setup mock view consumer
+        mockViewConsumer = {
+            consume: jest.fn()
         };
 
-        mockDependencies = {
-            definition: { name: "test-game" },
+        // Setup router config with properly mocked consumers
+        routerConfig = {
+            definition: {},
+            gameData: mockGameData,
+            userSignInConsumer: { consume: jest.fn() },
+            inGameConsumer: { consume: jest.fn() },
+            placeBetConsumer: { consume: jest.fn() },
+            userDisconnectConsumer: { consume: jest.fn() },
+            userSignInPublisher: { publish: jest.fn() },
+            historyQuery: { query: jest.fn() },
+            logService: mockLogService,
+            playGamePermissionValidator: { validate: jest.fn() },
+            viewConsumer: mockViewConsumer,
+        };
+
+        router = new BaseViewRouter(routerConfig);
+    });
+
+    describe('init', () => {
+        it('should initialize socket event listeners', () => {
+            // Act
+            router.init(mockSocket);
+
+            // Assert
+            expect(mockSocket.on).toHaveBeenCalledTimes(2);
+            expect(mockSocket.on).toHaveBeenCalledWith('inGame', expect.any(Function));
+            expect(mockSocket.on).toHaveBeenCalledWith('disconnect', expect.any(Function));
+        });
+    });
+
+    describe('handleInGame', () => {
+        beforeEach(() => {
+            router.init(mockSocket);
+        });
+
+        it('should handle inGame event with valid payload', async () => {
+            // Arrange
+            const payload = { id: 'test-game-id' };
+
+            // Get the inGame handler
+            const [[, inGameHandler]] = (mockSocket.on as jest.Mock).mock.calls;
+
+            // Act
+            await inGameHandler(payload);
+
+            // Assert
+            expect(mockGameData.viewPlayers[mockSocket.id]).toBe(mockSocket);
+            expect(mockViewConsumer.consume).toHaveBeenCalledWith(mockSocket, 'test-game-id');
+        });
+
+        it('should handle inGame event without payload', async () => {
+            // Get the inGame handler
+            const [[, inGameHandler]] = (mockSocket.on as jest.Mock).mock.calls;
+
+            // Act
+            await inGameHandler();
+
+            // Assert
+            expect(mockGameData.viewPlayers[mockSocket.id]).toBe(mockSocket);
+            expect(mockViewConsumer.consume).toHaveBeenCalledWith(mockSocket, undefined);
+        });
+
+        it('should initialize viewPlayers if undefined', async () => {
+            // Arrange
+            mockGameData.viewPlayers = undefined;
+            const [[, inGameHandler]] = (mockSocket.on as jest.Mock).mock.calls;
+
+            // Act
+            await inGameHandler();
+
+            // Assert
+            expect(mockGameData.viewPlayers).toBeDefined();
+            expect(mockGameData.viewPlayers[mockSocket.id]).toBe(mockSocket);
+        });
+
+        it('should handle errors during inGame processing', async () => {
+            // Arrange
+            const error = new Error('Test error');
+            mockViewConsumer.consume.mockRejectedValue(error);
+            const [[, inGameHandler]] = (mockSocket.on as jest.Mock).mock.calls;
+
+            // Act
+            await inGameHandler();
+
+            // Assert
+            expect(mockLogService.logError).toHaveBeenCalledWith(error);
+        });
+
+        it('should not proceed when verify returns false', async () => {
+            // Arrange
+            const payload = { id: 'test-game-id' };
+            jest.spyOn(router as any, 'verify').mockReturnValue(false);
+            const [[, inGameHandler]] = (mockSocket.on as jest.Mock).mock.calls;
+
+            // Act
+            await inGameHandler(payload);
+
+            // Assert
+            expect(mockViewConsumer.consume).not.toHaveBeenCalled();
+            expect(mockGameData.viewPlayers[mockSocket.id]).toBeUndefined();
+        });
+
+        it('should handle errors when setting viewPlayers', async () => {
+            // Arrange
+            const error = new Error('Failed to set viewPlayers');
+            Object.defineProperty(mockGameData, 'viewPlayers', {
+                set: () => {
+                    throw error;
+                },
+                get: () => undefined
+            });
+            const [[, inGameHandler]] = (mockSocket.on as jest.Mock).mock.calls;
+
+            // Act
+            await inGameHandler();
+
+            // Assert
+            expect(mockLogService.logError).toHaveBeenCalledWith(error);
+        });
+
+        it('should handle null payload', async () => {
+            // Arrange
+            const [[, inGameHandler]] = (mockSocket.on as jest.Mock).mock.calls;
+
+            // Act
+            await inGameHandler(null);
+
+            // Assert
+            expect(mockGameData.viewPlayers[mockSocket.id]).toBe(mockSocket);
+            expect(mockViewConsumer.consume).toHaveBeenCalledWith(mockSocket, undefined);
+        });
+
+        it('should handle empty object payload', async () => {
+            // Arrange
+            const [[, inGameHandler]] = (mockSocket.on as jest.Mock).mock.calls;
+
+            // Act
+            await inGameHandler({});
+
+            // Assert
+            expect(mockGameData.viewPlayers[mockSocket.id]).toBe(mockSocket);
+            expect(mockViewConsumer.consume).toHaveBeenCalledWith(mockSocket, undefined);
+        });
+    });
+
+    describe('handleDisconnect', () => {
+        beforeEach(() => {
+            router.init(mockSocket);
+            jest.useFakeTimers();
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        it('should remove player from viewPlayers on disconnect', () => {
+            // Arrange
+            mockGameData.viewPlayers[mockSocket.id] = mockSocket;
+            const disconnectHandler = (mockSocket.on as jest.Mock).mock.calls.find(
+                call => call[0] === 'disconnect'
+            )[1];
+
+            // Act
+            disconnectHandler();
+            jest.runAllTimers();
+
+            // Assert
+            expect(mockGameData.viewPlayers[mockSocket.id]).toBeUndefined();
+        });
+
+        it('should handle errors during disconnect', () => {
+            // Arrange
+            mockGameData.viewPlayers[mockSocket.id] = mockSocket;
+            Object.defineProperty(mockGameData, 'viewPlayers', {
+                get: () => {
+                    throw new Error('Disconnect error');
+                }
+            });
+            const disconnectHandler = (mockSocket.on as jest.Mock).mock.calls.find(
+                call => call[0] === 'disconnect'
+            )[1];
+
+            // Act
+            disconnectHandler();
+            jest.runAllTimers();
+
+            // Assert
+            expect(mockLogService.logError).toHaveBeenCalledWith(expect.any(Error));
+        });
+
+        it('should handle case when viewPlayers is undefined during disconnect', () => {
+            // Arrange
+            mockGameData.viewPlayers = undefined;
+            const disconnectHandler = (mockSocket.on as jest.Mock).mock.calls.find(
+                call => call[0] === 'disconnect'
+            )[1];
+
+            // Act
+            disconnectHandler();
+            jest.runAllTimers();
+
+            // Assert
+            expect(mockLogService.logError).not.toHaveBeenCalled();
+        });
+
+        it('should handle delete operation error during disconnect', () => {
+            // Arrange
+            const error = new Error('Delete operation failed');
+            mockGameData.viewPlayers = new Proxy({}, {
+                deleteProperty: () => {
+                    throw error;
+                }
+            });
+            const disconnectHandler = (mockSocket.on as jest.Mock).mock.calls.find(
+                call => call[0] === 'disconnect'
+            )[1];
+
+            // Act
+            disconnectHandler();
+            jest.runAllTimers();
+
+            // Assert
+            expect(mockLogService.logError).toHaveBeenCalledWith(error);
+        });
+
+        it('should handle error in setTimeout creation', () => {
+            // Arrange
+            const error = new Error('setTimeout error');
+            const originalSetTimeout = global.setTimeout;
+            global.setTimeout = jest.fn().mockImplementation(() => {
+                throw error;
+            }) as unknown as typeof global.setTimeout;
+
+            const disconnectHandler = (mockSocket.on as jest.Mock).mock.calls.find(
+                call => call[0] === 'disconnect'
+            )[1];
+
+            // Act
+            disconnectHandler();
+
+            // Assert
+            expect(mockLogService.logError).toHaveBeenCalledWith(error);
+
+            // Cleanup
+            global.setTimeout = originalSetTimeout;
+        });
+    });
+
+    describe('verify', () => {
+        it('should return true by default', () => {
+            // Act
+            const result = router['verify']();
+
+            // Assert
+            expect(result).toBe(true);
+        });
+    });
+
+    // Test verify method
+    it('should return true by default from verify method', () => {
+        // Arrange
+        class TestRouter extends BaseViewRouter {
+            public testVerify(): boolean {
+                return this.verify();
+            }
+        }
+
+        const router = new TestRouter({
+            definition: {},
+            gameData: {},
+            userSignInConsumer: { consume: jest.fn() },
+            inGameConsumer: { consume: jest.fn() },
+            placeBetConsumer: { consume: jest.fn() },
+            userDisconnectConsumer: { consume: jest.fn() },
+            userSignInPublisher: { publish: jest.fn() },
+            historyQuery: { query: jest.fn() },
+            logService: { logError: jest.fn() },
+            playGamePermissionValidator: { validate: jest.fn() },
+            viewConsumer: { consume: jest.fn() }
+        });
+
+        // Act
+        const result = router.testVerify();
+
+        // Assert
+        expect(result).toBe(true);
+    });
+
+    // Test error handling in handleInGame
+    it('should handle errors in handleInGame', async () => {
+        // Arrange
+        const mockError = new Error('Test error');
+        const mockLogService = { logError: jest.fn() };
+        const mockSocket = {
+            id: 'test-socket-id',
+            on: jest.fn(),
+        } as any;
+
+        const mockViewConsumer = {
+            consume: jest.fn().mockRejectedValue(mockError)
+        };
+
+        const router = new BaseViewRouter({
+            definition: {},
             gameData: { viewPlayers: {} },
             userSignInConsumer: { consume: jest.fn() },
             inGameConsumer: { consume: jest.fn() },
@@ -65,125 +344,21 @@ describe("BaseViewRouter", () => {
             userDisconnectConsumer: { consume: jest.fn() },
             userSignInPublisher: { publish: jest.fn() },
             historyQuery: { query: jest.fn() },
-            logService: mockLogService as LogService & { logError: jest.MockedFunction<typeof mockLogError> },
+            logService: mockLogService,
             playGamePermissionValidator: { validate: jest.fn() },
-            viewConsumer: mockViewConsumer as ViewConsumer & { consume: jest.MockedFunction<typeof mockConsume> },
-        };
-
-        baseViewRouter = new TestBaseViewRouter(mockDependencies);
-    });
-
-    describe("init", () => {
-        it("should initialize socket event listeners", () => {
-            baseViewRouter.init(mockSocket as Socket);
-
-            expect(mockSocket.on).toHaveBeenCalledWith(
-                "inGame",
-                expect.any(Function)
-            );
-            expect(mockSocket.on).toHaveBeenCalledWith(
-                "disconnect",
-                expect.any(Function)
-            );
-            expect(baseViewRouter.getSocketClient()).toBe(mockSocket);
-        });
-    });
-
-    describe("handleInGame", () => {
-        beforeEach(() => {
-            baseViewRouter.init(mockSocket as Socket);
+            viewConsumer: mockViewConsumer
         });
 
-        it("should handle inGame event successfully", async () => {
-            const payload = { id: "test-id" };
-            jest.spyOn(baseViewRouter, "verify").mockReturnValue(true);
+        // Initialize router
+        router.init(mockSocket);
 
-            await baseViewRouter.testHandleInGame(payload);
+        // Get the inGame handler
+        const [[, inGameHandler]] = mockSocket.on.mock.calls;
 
-            const gameData = baseViewRouter.getGameData();
-            expect(gameData.viewPlayers?.[mockSocket.id]).toBe(mockSocket);
-            expect(mockDependencies.viewConsumer.consume).toHaveBeenCalledWith(
-                mockSocket,
-                payload.id
-            );
-        });
+        // Act
+        await inGameHandler({ id: 'test-id' });
 
-        it("should not process if verification fails", async () => {
-            jest.spyOn(baseViewRouter, "verify").mockReturnValue(false);
-
-            await baseViewRouter.testHandleInGame({});
-
-            expect(mockDependencies.viewConsumer.consume).not.toHaveBeenCalled();
-        });
-
-        it("should initialize viewPlayers if undefined", async () => {
-            const gameData = baseViewRouter.getGameData();
-            gameData.viewPlayers = undefined;
-            jest.spyOn(baseViewRouter, "verify").mockReturnValue(true);
-
-            await baseViewRouter.testHandleInGame({});
-
-            expect(gameData.viewPlayers).toBeDefined();
-            expect(typeof gameData.viewPlayers).toBe("object");
-        });
-
-        it("should log error if exception occurs", async () => {
-            const error = new Error("Test error");
-            (mockDependencies.viewConsumer.consume as jest.Mock).mockRejectedValue(error);
-            jest.spyOn(baseViewRouter, "verify").mockReturnValue(true);
-
-            await baseViewRouter.testHandleInGame({});
-
-            expect(mockDependencies.logService.logError).toHaveBeenCalledWith(error);
-        });
-    });
-
-    describe("handleDisconnect", () => {
-        beforeEach(() => {
-            baseViewRouter.init(mockSocket as Socket);
-            jest.useFakeTimers();
-            (mockDependencies.logService.logError as jest.Mock).mockClear();
-        });
-
-        afterEach(() => {
-            jest.useRealTimers();
-        });
-
-        it("should remove player from viewPlayers after timeout", () => {
-            const gameData = baseViewRouter.getGameData();
-            gameData.viewPlayers = { [mockSocket.id]: mockSocket as Socket };
-
-            baseViewRouter.testHandleDisconnect();
-            jest.runAllTimers();
-
-            expect(gameData.viewPlayers[mockSocket.id]).toBeUndefined();
-        });
-
-        it("should log error if exception occurs during disconnect", () => {
-            const error = new Error("Test error");
-            jest.spyOn(mockDependencies.logService, 'logError').mockImplementation(() => { });
-            (mockDependencies.logService.logError as jest.Mock).mockImplementation(() => { });
-            const gameData = baseViewRouter.getGameData();
-            gameData.viewPlayers = new Proxy(
-                {},
-                {
-                    deleteProperty: () => {
-                        throw error;
-                    },
-                }
-            );
-            gameData.viewPlayers[mockSocket.id] = mockSocket as Socket;
-
-            baseViewRouter.testHandleDisconnect();
-            jest.runAllTimers();
-
-            expect(mockDependencies.logService.logError).toHaveBeenCalledWith(error);
-        });
-    });
-
-    describe("verify", () => {
-        it("should return true by default", () => {
-            expect(baseViewRouter.verify()).toBe(true);
-        });
+        // Assert
+        expect(mockLogService.logError).toHaveBeenCalledWith(mockError);
     });
 }); 
