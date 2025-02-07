@@ -1,0 +1,60 @@
+variables:
+  NODEJS_IMAGE: hub.lumigame.com/base/node:20.9.0-alpine
+
+include:
+  - project: "ci/core-cicd"
+    ref: main
+    file: "luminet.gitlab-ci.yml"
+
+.unit_test_js:
+  artifacts:
+    when: always
+    paths:
+      - ./**/lcov.info
+      - ./coverage
+    reports:
+      junit:
+        - ./coverage/unit-tests.xml
+    expire_in: 1 day
+
+unit_test:
+  extends: .unit_test_js
+  image: $NODEJS_IMAGE
+  stage: test
+  tags:
+    - ci
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 day
+  before_script:
+    - npm install
+  script:
+    - npm run test:coverage
+  coverage: '/All files[^|]*\|[^|]*\|[^|]*\|[^|]*\|[\d\.]*\s*/'
+
+mutation_test:
+  image: $NODEJS_IMAGE
+  stage: test
+  tags:
+    - ci
+  needs:
+    - unit_test
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+    policy: pull
+  script:
+    - npm run test:mutation
+  allow_failure: true
+  artifacts:
+    reports:
+      junit: reports/mutation/mutation.xml
+    paths:
+      - reports/mutation
+    expire_in: 1 week
