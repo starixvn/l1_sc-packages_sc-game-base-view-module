@@ -24,15 +24,50 @@ The `BaseViewRouter` class manages socket connections and routing for view-only 
 
 - Socket connection initialization
 - View-only client management
-- In-game event handling
+- In-game event handling and routing
 - Disconnection handling
+- Error logging and validation
 
-Key features:
+Configuration options:
 
-- Maintains a registry of view-only players
-- Integrates with various game consumers (sign-in, in-game, bet placement)
-- Handles permission validation
-- Provides error logging
+```typescript
+interface BaseViewRouterConfig {
+  definition: any;
+  gameData: GameData;
+  userSignInConsumer: UserSignInConsumer;
+  inGameConsumer: InGameConsumer;
+  placeBetConsumer: PlaceBetConsumer;
+  userDisconnectConsumer: UserDisconnectConsumer;
+  userSignInPublisher: UserSignInPublisher;
+  historyQuery: HistoryQuery;
+  logService: LogService;
+  playGamePermissionValidator: PlayGamePermissionValidator;
+  viewConsumer: ViewConsumer;
+}
+```
+
+### ViewConsumer
+
+The `ViewConsumer` class handles view-only client requests and builds appropriate payloads. Features:
+
+- Manages game state information
+- Handles game configurations (odds, free bets, boosted choices)
+- Provides round history with configurable history length
+- Tracks betting information and remaining time
+- Supports user-specific data handling
+
+Constructor parameters:
+
+```typescript
+constructor(
+    definition: Definition,
+    gameData: GameData,
+    roundQuery: RoundQuery,
+    publisher: Publisher,
+    getBalance: GetBalance,
+    userInfosRepository: UserInfosRepository
+)
+```
 
 ### GameStatusPublisher
 
@@ -42,6 +77,7 @@ Extends the base `GameStatusPublisher` from sc-game-base to include view-only cl
 - Handles enabling/disabling game status updates
 - Manages game configuration distribution
 - Supports special game modes (e.g., free bets)
+- Integrates with sc-game-base core functionality
 
 ### RoundResultPublisher
 
@@ -50,16 +86,8 @@ Extends the base `RoundResultPublisher` from sc-game-base to include view-only c
 - Publishes round results to all connected view clients
 - Handles asynchronous result distribution
 - Includes error handling for socket emissions
-
-### ViewConsumer
-
-The `ViewConsumer` class handles view-only client requests and builds appropriate payloads. Features:
-
-- Manages game state information
-- Handles disabled game states
-- Provides round history
-- Manages game configurations
-- Tracks betting information
+- Supports custom game definitions
+- Maintains backward compatibility with sc-game-base
 
 ## Usage
 
@@ -71,7 +99,7 @@ import {
   ViewConsumer,
 } from "sc-game-base-view-module";
 
-// Initialize ViewConsumer
+// Initialize ViewConsumer with required dependencies
 const viewConsumer = new ViewConsumer(
   definition,
   gameData,
@@ -81,7 +109,7 @@ const viewConsumer = new ViewConsumer(
   userInfosRepository
 );
 
-// Initialize BaseViewRouter
+// Initialize BaseViewRouter with full configuration
 const viewRouter = new BaseViewRouter({
   definition,
   gameData,
@@ -96,7 +124,7 @@ const viewRouter = new BaseViewRouter({
   viewConsumer,
 });
 
-// Initialize publishers
+// Initialize publishers with required game data
 const gameStatusPublisher = new GameStatusPublisher({
   gameData,
   gameName: "yourGameName",
@@ -130,11 +158,30 @@ npm run test:coverage
 
 # Run mutation tests
 npm run test:mutation
+
+# Release beta version
+npm run release:beta
 ```
+
+## Testing
+
+The project includes comprehensive test coverage including:
+
+- Unit tests using Jest
+- Mutation testing with Stryker
+- Coverage reporting
+- Integration tests for socket communication
+- Type checking with TypeScript
 
 ## Contributing
 
-Please ensure all new features include appropriate test coverage and documentation.
+Please ensure all new features include:
+
+- Appropriate test coverage
+- TypeScript type definitions
+- Documentation updates
+- Adherence to existing code style
+- Passing mutation tests
 
 ## License
 
