@@ -1,42 +1,13 @@
 import { Socket } from "socket.io";
-
-interface GameConfigs {
-    odds: any;
-    originalOdds: any;
-    enableFreeBet: boolean;
-    boostedChoices: any;
-    enabled: boolean;
-}
-
-export interface GameData {
-    gameConfigs?: GameConfigs;
-    remainingTime: number;
-    umMessages?: any;
-    delayStartTime?: number;
-    totalBets: any;
-    roundId: string;
-}
-
-interface Definition {
-    name: string;
-    numberOfRoundHistory: number;
-}
-
-interface RoundQuery {
-    getList(numberOfRounds: number): Promise<any[]>;
-}
-
-interface Publisher {
-    publish(data: any): Promise<void>;
-}
-
-interface GetBalance {
-    (userId: string): Promise<number>;
-}
-
-interface UserInfosRepository {
-    get(userId: string): Promise<any>;
-}
+import {
+    GameData,
+    GameConfigs,
+    Definition,
+    RoundQuery,
+    Publisher,
+    GetBalance,
+    UserInfosRepository
+} from "../types/types";
 
 export default class ViewConsumer {
     private definition: Definition;
@@ -83,7 +54,7 @@ export default class ViewConsumer {
         totalBets: any;
     }> {
         const { odds = null, originalOdds = null, enableFreeBet = false, boostedChoices = null } = this.gameData.gameConfigs ?? {};
-        const { totalBets, roundId, remainingTime } = this.gameData;
+        const { totalBets, roundId = '', remainingTime } = this.gameData;
         const gameConfigs = { odds, originalOdds, enableFreeBet, boostedChoices };
 
         const roundHistory = await this.roundQuery.getList(this.definition.numberOfRoundHistory);

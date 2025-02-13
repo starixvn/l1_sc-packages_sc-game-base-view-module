@@ -15,4 +15,11 @@ declare module 'sc-game-base' {
             }
         }
     }
+
+    export namespace Table {
+        class TableGameData {
+            constructor(remainingTime: number);
+            protected remainingTime: number;
+        }
+    }
 } 

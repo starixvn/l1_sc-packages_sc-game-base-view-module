@@ -1,6 +1,6 @@
 {
     "name": "sc-game-base-view-module",
-    "version": "1.0.1-beta.4",
+    "version": "1.0.1-beta.8",
     "description": "Reusable view components for sc-game-base",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -18,11 +18,7 @@
         "test": "jest",
         "test:coverage": "jest --coverage",
         "test:mutation": "stryker run",
-        "install-deps": "npm install && npm install --save-peer",
-        "link-pkg": "yarn link && echo '@sg/sg-game-client has been linked. Use yarn link @sg/sg-game-client in other projects to use it.'",
-        "link-pkg:dev": "npm run build && yarn link && echo '@sg/sg-game-client development version has been linked. Use yarn link @sg/sg-game-client in other projects to use it.'",
-        "link-pkg:watch": "yarn link && echo '@sg/sg-game-client watch mode has been linked. Use yarn link @sg/sg-game-client in other projects to use it.' && npm run start",
-        "unlink-pkg": "yarn unlink"
+        "install-deps": "npm install && npm install --save-peer"
     },
     "repository": {
         "type": "git",

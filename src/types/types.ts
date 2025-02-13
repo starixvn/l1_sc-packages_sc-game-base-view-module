@@ -1,8 +1,42 @@
 import { Socket } from "socket.io";
 
+export interface GameConfigs {
+    odds: any;
+    originalOdds: any;
+    enableFreeBet: boolean;
+    boostedChoices?: any;
+    enabled: boolean;
+}
+
 export interface GameData {
     viewPlayers?: Record<string, Socket>;
-    [key: string]: any;
+    gameConfigs?: GameConfigs;
+    remainingTime: number;
+    umMessages?: any;
+    delayStartTime?: number;
+    totalBets?: any;
+    roundId?: string;
+}
+
+export interface Definition {
+    name: string;
+    numberOfRoundHistory: number;
+}
+
+export interface RoundQuery {
+    getList(numberOfRounds: number): Promise<any[]>;
+}
+
+export interface Publisher {
+    publish(data: any): Promise<void>;
+}
+
+export interface GetBalance {
+    (userId: string): Promise<number>;
+}
+
+export interface UserInfosRepository {
+    get(userId: string): Promise<any>;
 }
 
 export interface LogService {

@@ -1,13 +1,5 @@
 import { Core } from "sc-game-base";
-import { Socket } from "socket.io";
-
-interface GameData {
-    viewPlayers?: Record<string, Socket>;
-}
-
-interface Definition {
-    name: string;
-}
+import { GameData, Definition } from "../types/types";
 
 export default class RoundResultPublisher extends Core.BaseEventPublishers.RoundResultPublisher {
     protected gameData!: GameData;

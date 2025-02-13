@@ -76,7 +76,8 @@ describe("GameStatusPublisher", () => {
             gameConfigs: {
                 odds: {},
                 originalOdds: {},
-                enableFreeBet: false
+                enableFreeBet: false,
+                enabled: true
             },
             remainingTime: 0,
             viewPlayers: {} // Initialize empty viewPlayers object
@@ -184,7 +185,8 @@ describe("GameStatusPublisher", () => {
                 gameConfigs: {
                     odds: {},
                     originalOdds: {},
-                    enableFreeBet: false
+                    enableFreeBet: false,
+                    enabled: true
                 },
                 remainingTime: 0
             };
@@ -211,6 +213,7 @@ describe("GameStatusPublisher", () => {
                     odds: { test: "odds" },
                     originalOdds: { test: "originalOdds" },
                     enableFreeBet: true,
+                    enabled: true,
                     extraField: "should not be included",
                 },
                 remainingTime: 100,
@@ -222,7 +225,7 @@ describe("GameStatusPublisher", () => {
                 gameConfigs: {
                     odds: { test: "odds" },
                     originalOdds: { test: "originalOdds" },
-                    enableFreeBet: true,
+                    enableFreeBet: true
                 },
                 remainingTime: 100,
                 snr: true,
@@ -244,6 +247,7 @@ describe("GameStatusPublisher", () => {
                     odds: { test: "odds" },
                     originalOdds: { test: "originalOdds" },
                     enableFreeBet: true,
+                    enabled: true,
                 },
                 remainingTime: 100,
             };
@@ -271,6 +275,7 @@ describe("GameStatusPublisher", () => {
                     odds: { test: "odds" },
                     originalOdds: { test: "originalOdds" },
                     enableFreeBet: true,
+                    enabled: true
                 },
                 remainingTime: 100,
             };
@@ -281,7 +286,7 @@ describe("GameStatusPublisher", () => {
                 gameConfigs: {
                     odds: { test: "odds" },
                     originalOdds: { test: "originalOdds" },
-                    enableFreeBet: true,
+                    enableFreeBet: true
                 },
                 remainingTime: 100,
                 snr: true,

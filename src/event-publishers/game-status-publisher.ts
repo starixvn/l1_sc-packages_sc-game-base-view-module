@@ -1,15 +1,5 @@
 import { Core } from "sc-game-base";
-import { Socket } from "socket.io";
-
-interface GameData {
-    viewPlayers?: Record<string, Socket>;
-    gameConfigs: {
-        odds: any;
-        originalOdds: any;
-        enableFreeBet: boolean;
-    };
-    remainingTime: number;
-}
+import { GameData } from "../types/types";
 
 export default class GameStatusPublisher extends Core.BaseEventPublishers.GameStatusPublisher {
     protected gameData!: GameData;
@@ -29,6 +19,8 @@ export default class GameStatusPublisher extends Core.BaseEventPublishers.GameSt
         super.publishEnablingGameStatus();
 
         const { gameConfigs, remainingTime } = this.gameData;
+        if (!gameConfigs) return;
+
         const configs = {
             odds: gameConfigs.odds,
             originalOdds: gameConfigs.originalOdds,
