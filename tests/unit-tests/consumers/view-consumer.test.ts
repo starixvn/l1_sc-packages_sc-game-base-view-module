@@ -1,6 +1,6 @@
 import { Socket } from 'socket.io';
-import ViewConsumer from '../../src/view-consumer';
-import type { GameData } from '../../src/view-consumer';
+import ViewConsumer, { GameData } from '../../../src/consumers/view-consumer';
+import type { GameData as TypesGameData } from '../../../src/types/types';
 
 describe('ViewConsumer', () => {
     // Mock dependencies

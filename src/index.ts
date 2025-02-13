@@ -1,5 +1,5 @@
-export { default as BaseViewRouter } from './base-view-router';
+export { default as BaseViewRouter } from './routers/base-view-router';
 export * from './types/types';
-export { default as ViewConsumer } from './view-consumer';
-export { default as GameStatusPublisher } from './game-status-publisher';
-export { default as RoundResultPublisher } from './round-result-publisher';
+export { default as ViewConsumer } from './consumers/view-consumer';
+export { default as GameStatusPublisher } from './event-publishers/game-status-publisher';
+export { default as RoundResultPublisher } from './event-publishers/round-result-publisher';

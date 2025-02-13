@@ -1,6 +1,6 @@
 import { Core } from "sc-game-base";
 import { Socket } from "socket.io";
-import RoundResultPublisher from "../../src/round-result-publisher";
+import RoundResultPublisher from "../../../src/event-publishers/round-result-publisher";
 
 // Create mock functions
 const mockParentPublishToAllUsers = jest.fn();

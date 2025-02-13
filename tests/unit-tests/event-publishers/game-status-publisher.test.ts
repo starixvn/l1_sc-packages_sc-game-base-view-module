@@ -1,6 +1,6 @@
 import { Core } from "sc-game-base";
 import { Socket } from "socket.io";
-import GameStatusPublisher from "../../src/game-status-publisher";
+import GameStatusPublisher from "../../../src/event-publishers/game-status-publisher";
 
 // Create mock functions
 const mockPublishToAllUsers = jest.fn();

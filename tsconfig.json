@@ -27,10 +27,10 @@
     "include": [
         "src/**/*",
         "tests/unit-tests/index.test.ts",
-        "tests/unit-tests/round-result-publisher.test.ts",
-        "tests/unit-tests/view-consumer.test.ts",
-        "tests/unit-tests/game-status-publisher.test.ts",
-        "tests/unit-tests/base-view-router.test.ts"
+        "tests/unit-tests/event-publishers/round-result-publisher.test.ts",
+        "tests/unit-tests/consumers/view-consumer.test.ts",
+        "tests/unit-tests/event-publishers/game-status-publisher.test.ts",
+        "tests/unit-tests/routers/base-view-router.test.ts"
     ],
     "exclude": [
         "node_modules",

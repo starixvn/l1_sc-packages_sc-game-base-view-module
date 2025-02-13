@@ -1,6 +1,6 @@
 import { Socket } from "socket.io";
-import BaseViewRouter from "../../src/base-view-router";
-import { BaseViewRouterConfig } from "../../src/types/types";
+import BaseViewRouter from "../../../src/routers/base-view-router";
+import { BaseViewRouterConfig } from "../../../src/types/types";
 
 describe('BaseViewRouter', () => {
     // Mock dependencies

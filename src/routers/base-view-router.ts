@@ -1,5 +1,5 @@
 import { Socket } from "socket.io";
-import { BaseViewRouterConfig } from "./types/types";
+import { BaseViewRouterConfig } from "src/types/types";
 
 export default class BaseViewRouter {
     private definition: any;
