@@ -1,6 +1,6 @@
 {
     "name": "sc-game-base-view-module",
-    "version": "1.0.1-beta.8",
+    "version": "1.0.1-beta.10",
     "description": "Reusable view components for sc-game-base",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -33,9 +33,6 @@
         "sc-game-base": "4.1.0",
         "socket.io": "^4.0.0"
     },
-    "peerDependencies": {
-        "sc-game-base": ">=4.0.0"
-    },
     "devDependencies": {
         "@babel/core": "^7.0.0",
         "@babel/preset-env": "^7.12.11",
@@ -44,6 +41,9 @@
         "@stryker-mutator/jest-runner": "^8.2.0",
         "@stryker-mutator/typescript-checker": "^8.2.0",
         "@types/jest": "^29.5.0",
+        "@types/sc-common": "^1.0.0-beta.0",
+        "@types/sc-game-base": "^1.0.0-beta.6",
+        "@types/sc-base-database": "^1.0.0-beta.0",
         "@types/node": "^20.11.17",
         "@types/socket.io": "^3.0.2",
         "babel-jest": "^29.5.0",

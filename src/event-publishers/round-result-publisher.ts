@@ -1,24 +1,17 @@
-import { Core } from "sc-game-base";
-import { GameData, Definition } from "../types/types";
+import { RoundResultPublisher as RoundResultPublisherBase } from "sc-game-base/src/core/event-publishers";
+import GameData from "../types/GameData";
 
-export default class RoundResultPublisher extends Core.BaseEventPublishers.RoundResultPublisher {
-    protected gameData!: GameData;
-    protected definition!: Definition;
-
-    public async publishToAllUsers(payload: any): Promise<void> {
-        await super.publishToAllUsers(payload);
-
-        if (this.gameData.viewPlayers) {
-            const sockets = Object.values(this.gameData.viewPlayers);
-            await Promise.all(
-                sockets.map(async (socket) => {
-                    try {
-                        await socket.emit(this.definition.name, payload);
-                    } catch (error) {
-                        console.error("Error emitting to socket:", error);
-                    }
-                })
-            );
-        }
+export default class RoundResultPublisher<T = {}> extends RoundResultPublisherBase {
+    override publishWinners(roundId: number, winningPlayers: any) {
+        // Implementation without console.log
     }
-} 
+
+    publishToAllUsers(payload: any) {
+        super.publishToAllUsers(payload);
+
+        const gameData = this.gameData as GameData;
+        Object.values(gameData.viewPlayers).forEach((socket) => {
+            socket && socket.emit(this.gameName, payload);
+        });
+    }
+}

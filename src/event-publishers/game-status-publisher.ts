@@ -1,37 +1,30 @@
-import { Core } from "sc-game-base";
-import { GameData } from "../types/types";
+import { GameStatusPublisher as GameStatusPublisherBase } from "sc-game-base/src/core/event-publishers";
+import GameData from "../types/GameData";
 
-export default class GameStatusPublisher extends Core.BaseEventPublishers.GameStatusPublisher {
-    protected gameData!: GameData;
-    protected gameName!: string;
-
-    public publishToAllUsers(payload: any): void {
+export default class GameStatusPublisher<T = {}> extends GameStatusPublisherBase {
+    override publishToAllUsers(payload: any): void {
         super.publishToAllUsers(payload);
 
-        if (this.gameData.viewPlayers) {
-            Object.values(this.gameData.viewPlayers).forEach((socket) => {
-                socket?.emit(this.gameName, payload);
-            });
-        }
+        const gameData = this.gameData as GameData;
+        Object.values(gameData.viewPlayers).forEach((socket) => {
+            socket && socket.emit(this.gameName, payload);
+        });
     }
 
-    public publishEnablingGameStatus(): void {
+    override publishEnablingGameStatus(): void {
         super.publishEnablingGameStatus();
 
         const { gameConfigs, remainingTime } = this.gameData;
-        if (!gameConfigs) return;
-
         const configs = {
             odds: gameConfigs.odds,
             originalOdds: gameConfigs.originalOdds,
             enableFreeBet: gameConfigs.enableFreeBet,
         };
 
-        if (this.gameData.viewPlayers) {
-            Object.values(this.gameData.viewPlayers).forEach((socket) => {
-                const payload = { gameConfigs: { ...configs }, remainingTime, snr: true };
-                socket?.emit(this.gameName, payload);
-            });
-        }
+        const gameData = this.gameData as GameData;
+        Object.values(gameData.viewPlayers).forEach((socket) => {
+            const payload = { gameConfigs: { ...configs }, remainingTime, snr: true };
+            socket && socket.emit(this.gameName, payload);
+        });
     }
 } 
